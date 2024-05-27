@@ -1,4 +1,5 @@
 import os
+import re
 
 import torch
 from mgds.MGDS import TrainDataLoader, MGDS
@@ -16,10 +17,10 @@ from mgds.pipelineModules.GenerateDepth import GenerateDepth
 from mgds.pipelineModules.GenerateImageLike import GenerateImageLike
 from mgds.pipelineModules.GenerateMaskedConditioningImage import GenerateMaskedConditioningImage
 from mgds.pipelineModules.GetFilename import GetFilename
+from mgds.pipelineModules.InlineAspectBatchSorting import InlineAspectBatchSorting
 from mgds.pipelineModules.LoadImage import LoadImage
 from mgds.pipelineModules.LoadMultipleTexts import LoadMultipleTexts
 from mgds.pipelineModules.ModifyPath import ModifyPath
-from mgds.pipelineModules.RamCache import RamCache
 from mgds.pipelineModules.RandomBrightness import RandomBrightness
 from mgds.pipelineModules.RandomCircularMaskShrink import RandomCircularMaskShrink
 from mgds.pipelineModules.RandomContrast import RandomContrast
@@ -144,9 +145,9 @@ class StableDiffusionBaseDataLoader(BaseDataLoader):
         if config.model_type.has_depth_input():
             inputs.append('depth')
 
-        lowest_resolution = min(int(res.strip()) for res in config.resolution.split(','))
-        circular_mask_shrink = RandomCircularMaskShrink(mask_name='mask', shrink_probability=1.0, shrink_factor_min=0.2, shrink_factor_max=1.0, enabled_in_name='settings.enable_random_circular_mask_shrink')
-        random_mask_rotate_crop = RandomMaskRotateCrop(mask_name='mask', additional_names=inputs, min_size=lowest_resolution, min_padding_percent=10, max_padding_percent=30, max_rotate_angle=20, enabled_in_name='settings.enable_random_mask_rotate_crop')
+        lowest_resolution = min([int(x.strip()) for x in re.split('\D', config.resolution) if x.strip() != ''])
+        circular_mask_shrink = RandomCircularMaskShrink(mask_name='mask', shrink_probability=1.0, shrink_factor_min=0.2, shrink_factor_max=1.0, enabled_in_name='concept.image.enable_random_circular_mask_shrink')
+        random_mask_rotate_crop = RandomMaskRotateCrop(mask_name='mask', additional_names=inputs, min_size=lowest_resolution, min_padding_percent=10, max_padding_percent=30, max_rotate_angle=20, enabled_in_name='concept.image.enable_random_mask_rotate_crop')
 
         modules = []
 
@@ -290,7 +291,7 @@ class StableDiffusionBaseDataLoader(BaseDataLoader):
 
         text_split_names = ['tokens', 'text_encoder_hidden_state']
 
-        sort_names = text_split_names + [
+        sort_names = text_split_names + image_aggregate_names + image_split_names + [
             'prompt', 'concept'
         ]
 
@@ -310,7 +311,6 @@ class StableDiffusionBaseDataLoader(BaseDataLoader):
             torch_gc()
 
         image_disk_cache = DiskCache(cache_dir=image_cache_dir, split_names=image_split_names, aggregate_names=image_aggregate_names, variations_in_name='concept.image_variations', balancing_in_name='concept.balancing', balancing_strategy_in_name='concept.balancing_strategy', variations_group_in_name=['concept.path', 'concept.seed', 'concept.include_subdirectories', 'concept.image'], group_enabled_in_name='concept.enabled', before_cache_fun=before_cache_image_fun)
-        image_ram_cache = RamCache(cache_names=image_split_names + image_aggregate_names, balancing_in_name='concept.balancing', balancing_strategy_in_name='concept.balancing_strategy', variations_group_in_name=['concept.path', 'concept.seed', 'concept.include_subdirectories', 'concept.image'], group_enabled_in_name='concept.enabled', before_cache_fun=before_cache_image_fun)
 
         text_disk_cache = DiskCache(cache_dir=text_cache_dir, split_names=text_split_names, aggregate_names=[], variations_in_name='concept.text_variations', balancing_in_name='concept.balancing', balancing_strategy_in_name='concept.balancing_strategy', variations_group_in_name=['concept.path', 'concept.seed', 'concept.include_subdirectories', 'concept.text'], group_enabled_in_name='concept.enabled', before_cache_fun=before_cache_text_fun)
 
@@ -318,12 +318,14 @@ class StableDiffusionBaseDataLoader(BaseDataLoader):
 
         if config.latent_caching:
             modules.append(image_disk_cache)
-        else:
-            modules.append(image_ram_cache)
 
-        if not config.text_encoder.train and config.latent_caching and not config.train_any_embedding():
-            modules.append(text_disk_cache)
-            sort_names = [x for x in sort_names if x not in text_split_names]
+        if config.latent_caching:
+            sort_names = [x for x in sort_names if x not in image_aggregate_names]
+            sort_names = [x for x in sort_names if x not in image_split_names]
+
+            if not config.text_encoder.train and not config.train_any_embedding():
+                modules.append(text_disk_cache)
+                sort_names = [x for x in sort_names if x not in text_split_names]
 
         if len(sort_names) > 0:
             variation_sorting = VariationSorting(names=sort_names, balancing_in_name='concept.balancing', balancing_strategy_in_name='concept.balancing_strategy', variations_group_in_name=['concept.path', 'concept.seed', 'concept.include_subdirectories', 'concept.text'], group_enabled_in_name='concept.enabled')
@@ -364,7 +366,12 @@ class StableDiffusionBaseDataLoader(BaseDataLoader):
             autocast_contexts=[model.autocast_context], dtype=model.train_dtype.torch_dtype(),
             before_cache_fun=before_cache_image_fun,
         )
-        batch_sorting = AspectBatchSorting(resolution_in_name='crop_resolution', names=sort_names, batch_size=config.batch_size)
+
+        if config.latent_caching:
+            batch_sorting = AspectBatchSorting(resolution_in_name='crop_resolution', names=sort_names, batch_size=config.batch_size)
+        else:
+            batch_sorting = InlineAspectBatchSorting(resolution_in_name='crop_resolution', names=sort_names, batch_size=config.batch_size)
+
         output = OutputPipelineModule(names=output_names)
 
         modules = [image_sample]

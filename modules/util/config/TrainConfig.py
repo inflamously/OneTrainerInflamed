@@ -214,14 +214,16 @@ class TrainConfig(BaseConfig):
     # data settings
     concept_file_name: str
     concepts: list[ConceptConfig]
-    circular_mask_generation: bool
-    random_rotate_and_crop: bool
     aspect_ratio_bucketing: bool
     latent_caching: bool
     clear_cache_before_training: bool
 
     # training settings
     learning_rate_scheduler: LearningRateScheduler
+    custom_learning_rate_scheduler: str | None
+    # Dict keys are literally called "key" and "value"; not a tuple because
+    # of restrictions with ConfigList.
+    scheduler_params: list[dict[str, str]]
     learning_rate: float
     learning_rate_warmup_steps: int
     learning_rate_cycles: float
@@ -314,6 +316,7 @@ class TrainConfig(BaseConfig):
     lora_rank: int
     lora_alpha: float
     lora_weight_dtype: DataType
+    bundle_additional_embeddings: bool
 
     # optimizer
     optimizer: TrainOptimizerConfig
@@ -565,14 +568,14 @@ class TrainConfig(BaseConfig):
         # data settings
         data.append(("concept_file_name", "training_concepts/concepts.json", str, False))
         data.append(("concepts", None, list[ConceptConfig], True))
-        data.append(("circular_mask_generation", False, bool, False))
-        data.append(("random_rotate_and_crop", False, bool, False))
         data.append(("aspect_ratio_bucketing", True, bool, False))
         data.append(("latent_caching", True, bool, False))
         data.append(("clear_cache_before_training", True, bool, False))
 
         # training settings
         data.append(("learning_rate_scheduler", LearningRateScheduler.CONSTANT, LearningRateScheduler, False))
+        data.append(("custom_learning_rate_scheduler", None, str, True))
+        data.append(("scheduler_params", [], list[dict[str, str]], True))
         data.append(("learning_rate", 3e-6, float, False))
         data.append(("learning_rate_warmup_steps", 200, int, False))
         data.append(("learning_rate_cycles", 1, int, False))
@@ -701,6 +704,7 @@ class TrainConfig(BaseConfig):
         data.append(("lora_rank", 16, int, False))
         data.append(("lora_alpha", 1.0, float, False))
         data.append(("lora_weight_dtype", DataType.FLOAT_32, DataType, False))
+        data.append(("bundle_additional_embeddings", True, bool, False))
 
         # optimizer
         data.append(("optimizer", TrainOptimizerConfig.default_values(), TrainOptimizerConfig, False))
