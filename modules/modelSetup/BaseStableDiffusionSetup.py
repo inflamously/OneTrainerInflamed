@@ -11,8 +11,9 @@ from modules.model.StableDiffusionModel import StableDiffusionModel, StableDiffu
 from modules.modelSetup.BaseModelSetup import BaseModelSetup
 from modules.modelSetup.mixin.ModelSetupDebugMixin import ModelSetupDebugMixin
 from modules.modelSetup.mixin.ModelSetupDiffusionLossMixin import ModelSetupDiffusionLossMixin
-from modules.modelSetup.mixin.ModelSetupDiffusionNoiseMixin import ModelSetupDiffusionNoiseMixin
+from modules.modelSetup.mixin.ModelSetupDiffusionMixin import ModelSetupDiffusionMixin
 from modules.modelSetup.mixin.ModelSetupEmbeddingMixin import ModelSetupEmbeddingMixin
+from modules.modelSetup.mixin.ModelSetupNoiseMixin import ModelSetupNoiseMixin
 from modules.modelSetup.stableDiffusion.checkpointing_util import \
     enable_checkpointing_for_transformer_blocks, enable_checkpointing_for_clip_encoder_layers, \
     create_checkpointed_forward
@@ -29,7 +30,8 @@ class BaseStableDiffusionSetup(
     BaseModelSetup,
     ModelSetupDiffusionLossMixin,
     ModelSetupDebugMixin,
-    ModelSetupDiffusionNoiseMixin,
+    ModelSetupNoiseMixin,
+    ModelSetupDiffusionMixin,
     ModelSetupEmbeddingMixin,
     metaclass=ABCMeta,
 ):
@@ -320,12 +322,11 @@ class BaseStableDiffusionSetup(
                 }
             else:
                 timestep = self._get_timestep_discrete(
-                    model.noise_scheduler,
+                    model.noise_scheduler.config['num_train_timesteps'],
                     deterministic,
                     generator,
                     scaled_latent_image.shape[0],
                     config,
-                    train_progress.global_step,
                 )
 
                 scaled_noisy_latent_image = self._add_noise_discrete(
@@ -431,7 +432,7 @@ class BaseStableDiffusionSetup(
                         )
 
                         # predicted image
-                        alphas_cumprod = model.noise_scheduler.alphas_cumprod.to(config.train_device)
+                        alphas_cumprod = model.noise_scheduler.alphas_cumprod.to(config.train_device, dtype=model.vae.dtype)
                         sqrt_alpha_prod = alphas_cumprod[timestep] ** 0.5
                         sqrt_alpha_prod = sqrt_alpha_prod.flatten().reshape(-1, 1, 1, 1)
 

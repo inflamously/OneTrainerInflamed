@@ -11,8 +11,9 @@ from modules.model.PixArtAlphaModel import PixArtAlphaModel, PixArtAlphaModelEmb
 from modules.modelSetup.BaseModelSetup import BaseModelSetup
 from modules.modelSetup.mixin.ModelSetupDebugMixin import ModelSetupDebugMixin
 from modules.modelSetup.mixin.ModelSetupDiffusionLossMixin import ModelSetupDiffusionLossMixin
-from modules.modelSetup.mixin.ModelSetupDiffusionNoiseMixin import ModelSetupDiffusionNoiseMixin
+from modules.modelSetup.mixin.ModelSetupDiffusionMixin import ModelSetupDiffusionMixin
 from modules.modelSetup.mixin.ModelSetupEmbeddingMixin import ModelSetupEmbeddingMixin
+from modules.modelSetup.mixin.ModelSetupNoiseMixin import ModelSetupNoiseMixin
 from modules.modelSetup.stableDiffusion.checkpointing_util import create_checkpointed_forward, \
     enable_checkpointing_for_t5_encoder_layers, enable_checkpointing_for_transformer_blocks
 from modules.module.AdditionalEmbeddingWrapper import AdditionalEmbeddingWrapper
@@ -28,7 +29,8 @@ class BasePixArtAlphaSetup(
     BaseModelSetup,
     ModelSetupDiffusionLossMixin,
     ModelSetupDebugMixin,
-    ModelSetupDiffusionNoiseMixin,
+    ModelSetupNoiseMixin,
+    ModelSetupDiffusionMixin,
     ModelSetupEmbeddingMixin,
     metaclass=ABCMeta,
 ):
@@ -87,7 +89,7 @@ class BasePixArtAlphaSetup(
             config.weight_dtypes().text_encoder,
             config.weight_dtypes().vae,
             config.weight_dtypes().lora if config.training_method == TrainingMethod.LORA else None,
-            config.weight_dtypes().embedding if config.training_method == TrainingMethod.EMBEDDING else None,
+            config.weight_dtypes().embedding if config.train_any_embedding() else None,
         ], config.enable_autocast_cache)
 
         model.text_encoder_autocast_context, model.text_encoder_train_dtype = disable_fp16_autocast_context(
@@ -97,7 +99,7 @@ class BasePixArtAlphaSetup(
             [
                 config.weight_dtypes().text_encoder,
                 config.weight_dtypes().lora if config.training_method == TrainingMethod.LORA else None,
-                config.weight_dtypes().embedding if config.training_method == TrainingMethod.EMBEDDING else None,
+                config.weight_dtypes().embedding if config.train_any_embedding() else None,
             ],
             config.enable_autocast_cache,
         )
@@ -353,12 +355,11 @@ class BasePixArtAlphaSetup(
                 }
             else:
                 timestep = self._get_timestep_discrete(
-                    model.noise_scheduler,
+                    model.noise_scheduler.config['num_train_timesteps'],
                     deterministic,
                     generator,
                     scaled_latent_image.shape[0],
                     config,
-                    train_progress.global_step,
                 )
 
                 scaled_noisy_latent_image = self._add_noise_discrete(

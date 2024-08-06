@@ -9,6 +9,7 @@ from torch.nn import Parameter
 from torch.optim.lr_scheduler import LambdaLR, LRScheduler, SequentialLR
 
 from modules.dataLoader.PixArtAlphaBaseDataLoader import PixArtAlphaBaseDataLoader
+from modules.dataLoader.StableDiffusion3BaseDataLoader import StableDiffusion3BaseDataLoader
 from modules.dataLoader.StableDiffusionBaseDataLoader import StableDiffusionBaseDataLoader
 from modules.dataLoader.StableDiffusionFineTuneVaeDataLoader import StableDiffusionFineTuneVaeDataLoader
 from modules.dataLoader.StableDiffusionXLBaseDataLoader import StableDiffusionXLBaseDataLoader
@@ -18,6 +19,9 @@ from modules.modelLoader.BaseModelLoader import BaseModelLoader
 from modules.modelLoader.PixArtAlphaEmbeddingModelLoader import PixArtAlphaEmbeddingModelLoader
 from modules.modelLoader.PixArtAlphaFineTuneModelLoader import PixArtAlphaFineTuneModelLoader
 from modules.modelLoader.PixArtAlphaLoRAModelLoader import PixArtAlphaLoRAModelLoader
+from modules.modelLoader.StableDiffusion3EmbeddingModelLoader import StableDiffusion3EmbeddingModelLoader
+from modules.modelLoader.StableDiffusion3FineTuneModelLoader import StableDiffusion3FineTuneModelLoader
+from modules.modelLoader.StableDiffusion3LoRAModelLoader import StableDiffusion3LoRAModelLoader
 from modules.modelLoader.StableDiffusionEmbeddingModelLoader import StableDiffusionEmbeddingModelLoader
 from modules.modelLoader.StableDiffusionFineTuneModelLoader import StableDiffusionFineTuneModelLoader
 from modules.modelLoader.StableDiffusionLoRAModelLoader import StableDiffusionLoRAModelLoader
@@ -29,6 +33,7 @@ from modules.modelLoader.WuerstchenFineTuneModelLoader import WuerstchenFineTune
 from modules.modelLoader.WuerstchenLoRAModelLoader import WuerstchenLoRAModelLoader
 from modules.modelSampler import BaseModelSampler
 from modules.modelSampler.PixArtAlphaSampler import PixArtAlphaSampler
+from modules.modelSampler.StableDiffusion3Sampler import StableDiffusion3Sampler
 from modules.modelSampler.StableDiffusionSampler import StableDiffusionSampler
 from modules.modelSampler.StableDiffusionVaeSampler import StableDiffusionVaeSampler
 from modules.modelSampler.StableDiffusionXLSampler import StableDiffusionXLSampler
@@ -37,6 +42,9 @@ from modules.modelSaver.BaseModelSaver import BaseModelSaver
 from modules.modelSaver.PixArtAlphaEmbeddingModelSaver import PixArtAlphaEmbeddingModelSaver
 from modules.modelSaver.PixArtAlphaFineTuneModelSaver import PixArtAlphaFineTuneModelSaver
 from modules.modelSaver.PixArtAlphaLoRAModelSaver import PixArtAlphaLoRAModelSaver
+from modules.modelSaver.StableDiffusion3EmbeddingModelSaver import StableDiffusion3EmbeddingModelSaver
+from modules.modelSaver.StableDiffusion3FineTuneModelSaver import StableDiffusion3FineTuneModelSaver
+from modules.modelSaver.StableDiffusion3LoRAModelSaver import StableDiffusion3LoRAModelSaver
 from modules.modelSaver.StableDiffusionEmbeddingModelSaver import StableDiffusionEmbeddingModelSaver
 from modules.modelSaver.StableDiffusionFineTuneModelSaver import StableDiffusionFineTuneModelSaver
 from modules.modelSaver.StableDiffusionLoRAModelSaver import StableDiffusionLoRAModelSaver
@@ -50,6 +58,9 @@ from modules.modelSetup.BaseModelSetup import BaseModelSetup
 from modules.modelSetup.PixArtAlphaEmbeddingSetup import PixArtAlphaEmbeddingSetup
 from modules.modelSetup.PixArtAlphaFineTuneSetup import PixArtAlphaFineTuneSetup
 from modules.modelSetup.PixArtAlphaLoRASetup import PixArtAlphaLoRASetup
+from modules.modelSetup.StableDiffusion3EmbeddingSetup import StableDiffusion3EmbeddingSetup
+from modules.modelSetup.StableDiffusion3FineTuneSetup import StableDiffusion3FineTuneSetup
+from modules.modelSetup.StableDiffusion3LoRASetup import StableDiffusion3LoRASetup
 from modules.modelSetup.StableDiffusionEmbeddingSetup import StableDiffusionEmbeddingSetup
 from modules.modelSetup.StableDiffusionFineTuneSetup import StableDiffusionFineTuneSetup
 from modules.modelSetup.StableDiffusionFineTuneVaeSetup import StableDiffusionFineTuneVaeSetup
@@ -71,7 +82,6 @@ from modules.util.enum.NoiseScheduler import NoiseScheduler
 from modules.util.enum.Optimizer import Optimizer
 from modules.util.enum.TrainingMethod import TrainingMethod
 from modules.util.lr_scheduler_util import *
-from modules.util.optimizer.CAME import CAME
 from modules.util.optimizer.adafactor_extensions import patch_adafactor
 from modules.util.optimizer.adam_extensions import patch_adam
 from modules.util.optimizer.adamw_extensions import patch_adamw
@@ -91,6 +101,8 @@ def create_model_loader(
                 return WuerstchenFineTuneModelLoader()
             if model_type.is_pixart():
                 return PixArtAlphaFineTuneModelLoader()
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3FineTuneModelLoader()
         case TrainingMethod.FINE_TUNE_VAE:
             if model_type.is_stable_diffusion():
                 return StableDiffusionFineTuneModelLoader()
@@ -103,6 +115,8 @@ def create_model_loader(
                 return WuerstchenLoRAModelLoader()
             if model_type.is_pixart():
                 return PixArtAlphaLoRAModelLoader()
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3LoRAModelLoader()
         case TrainingMethod.EMBEDDING:
             if model_type.is_stable_diffusion():
                 return StableDiffusionEmbeddingModelLoader()
@@ -112,6 +126,8 @@ def create_model_loader(
                 return WuerstchenEmbeddingModelLoader()
             if model_type.is_pixart():
                 return PixArtAlphaEmbeddingModelLoader()
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3EmbeddingModelLoader()
 
 
 def create_model_saver(
@@ -128,6 +144,8 @@ def create_model_saver(
                 return WuerstchenFineTuneModelSaver()
             if model_type.is_pixart():
                 return PixArtAlphaFineTuneModelSaver()
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3FineTuneModelSaver()
         case TrainingMethod.FINE_TUNE_VAE:
             if model_type.is_stable_diffusion():
                 return StableDiffusionFineTuneModelSaver()
@@ -140,6 +158,8 @@ def create_model_saver(
                 return WuerstchenLoRAModelSaver()
             if model_type.is_pixart():
                 return PixArtAlphaLoRAModelSaver()
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3LoRAModelSaver()
         case TrainingMethod.EMBEDDING:
             if model_type.is_stable_diffusion():
                 return StableDiffusionEmbeddingModelSaver()
@@ -149,6 +169,8 @@ def create_model_saver(
                 return WuerstchenEmbeddingModelSaver()
             if model_type.is_pixart():
                 return PixArtAlphaEmbeddingModelSaver()
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3EmbeddingModelSaver()
 
 
 def create_model_setup(
@@ -168,6 +190,8 @@ def create_model_setup(
                 return WuerstchenFineTuneSetup(train_device, temp_device, debug_mode)
             if model_type.is_pixart():
                 return PixArtAlphaFineTuneSetup(train_device, temp_device, debug_mode)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3FineTuneSetup(train_device, temp_device, debug_mode)
         case TrainingMethod.FINE_TUNE_VAE:
             if model_type.is_stable_diffusion():
                 return StableDiffusionFineTuneVaeSetup(train_device, temp_device, debug_mode)
@@ -180,6 +204,8 @@ def create_model_setup(
                 return WuerstchenLoRASetup(train_device, temp_device, debug_mode)
             if model_type.is_pixart():
                 return PixArtAlphaLoRASetup(train_device, temp_device, debug_mode)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3LoRASetup(train_device, temp_device, debug_mode)
         case TrainingMethod.EMBEDDING:
             if model_type.is_stable_diffusion():
                 return StableDiffusionEmbeddingSetup(train_device, temp_device, debug_mode)
@@ -189,6 +215,8 @@ def create_model_setup(
                 return WuerstchenEmbeddingSetup(train_device, temp_device, debug_mode)
             if model_type.is_pixart():
                 return PixArtAlphaEmbeddingSetup(train_device, temp_device, debug_mode)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3EmbeddingSetup(train_device, temp_device, debug_mode)
 
 
 def create_model_sampler(
@@ -208,6 +236,8 @@ def create_model_sampler(
                 return WuerstchenSampler(train_device, temp_device, model, model_type)
             if model_type.is_pixart():
                 return PixArtAlphaSampler(train_device, temp_device, model, model_type)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3Sampler(train_device, temp_device, model, model_type)
         case TrainingMethod.FINE_TUNE_VAE:
             if model_type.is_stable_diffusion():
                 return StableDiffusionVaeSampler(train_device, temp_device, model, model_type)
@@ -220,6 +250,8 @@ def create_model_sampler(
                 return WuerstchenSampler(train_device, temp_device, model, model_type)
             if model_type.is_pixart():
                 return PixArtAlphaSampler(train_device, temp_device, model, model_type)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3Sampler(train_device, temp_device, model, model_type)
         case TrainingMethod.EMBEDDING:
             if model_type.is_stable_diffusion():
                 return StableDiffusionSampler(train_device, temp_device, model, model_type)
@@ -229,6 +261,8 @@ def create_model_sampler(
                 return WuerstchenSampler(train_device, temp_device, model, model_type)
             if model_type.is_pixart():
                 return PixArtAlphaSampler(train_device, temp_device, model, model_type)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3Sampler(train_device, temp_device, model, model_type)
 
 
 def create_data_loader(
@@ -250,6 +284,8 @@ def create_data_loader(
                 return WuerstchenBaseDataLoader(train_device, temp_device, config, model, train_progress)
             if model_type.is_pixart():
                 return PixArtAlphaBaseDataLoader(train_device, temp_device, config, model, train_progress)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3BaseDataLoader(train_device, temp_device, config, model, train_progress)
         case TrainingMethod.FINE_TUNE_VAE:
             if model_type.is_stable_diffusion():
                 return StableDiffusionFineTuneVaeDataLoader(train_device, temp_device, config, model, train_progress)
@@ -262,6 +298,8 @@ def create_data_loader(
                 return WuerstchenBaseDataLoader(train_device, temp_device, config, model, train_progress)
             if model_type.is_pixart():
                 return PixArtAlphaBaseDataLoader(train_device, temp_device, config, model, train_progress)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3BaseDataLoader(train_device, temp_device, config, model, train_progress)
         case TrainingMethod.EMBEDDING:
             if model_type.is_stable_diffusion():
                 return StableDiffusionBaseDataLoader(train_device, temp_device, config, model, train_progress)
@@ -271,6 +309,8 @@ def create_data_loader(
                 return WuerstchenBaseDataLoader(train_device, temp_device, config, model, train_progress)
             if model_type.is_pixart():
                 return PixArtAlphaBaseDataLoader(train_device, temp_device, config, model, train_progress)
+            if model_type.is_stable_diffusion_3():
+                return StableDiffusion3BaseDataLoader(train_device, temp_device, config, model, train_progress)
 
 
 def create_optimizer(
@@ -703,6 +743,7 @@ def create_optimizer(
 
         # CAME Optimizer
         case Optimizer.CAME:
+            from modules.util.optimizer.CAME import CAME
             optimizer = CAME(
                 params=parameters,
                 lr=config.learning_rate,
@@ -715,7 +756,59 @@ def create_optimizer(
                 stochastic_rounding=optimizer_config.stochastic_rounding
             )
 
-    if state_dict is not None:
+        # ADABELIEF Optimizer
+        case Optimizer.ADABELIEF:
+            from timm.optim.adabelief import AdaBelief
+            optimizer = AdaBelief(
+                params=parameters,
+                lr=config.learning_rate if config.learning_rate is not None else 0,
+                weight_decay=optimizer_config.weight_decay if optimizer_config.weight_decay is not None else 0,
+                betas=(optimizer_config.beta1 if optimizer_config.beta1 is not None else 0.9,
+                       optimizer_config.beta2 if optimizer_config.beta2 is not None else 0.999),
+                eps=optimizer_config.eps if optimizer_config.eps is not None else 1e-16,
+                amsgrad=optimizer_config.amsgrad if optimizer_config.amsgrad is not None else False,
+                decoupled_decay=optimizer_config.decoupled_decay if optimizer_config.decoupled_decay is not None else True,
+                fixed_decay=optimizer_config.fixed_decay if optimizer_config.fixed_decay is not None else False,
+                rectify=optimizer_config.rectify if optimizer_config.rectify is not None else True,
+                degenerated_to_sgd=optimizer_config.degenerated_to_sgd if optimizer_config.degenerated_to_sgd is not None else True,
+            )
+
+        # TIGER Optimizer
+        case Optimizer.TIGER:
+            from pytorch_optimizer.optimizer.tiger import Tiger
+            optimizer = Tiger(
+                params=parameters,
+                lr=config.learning_rate if config.learning_rate is not None else 0,
+                weight_decay=optimizer_config.weight_decay if optimizer_config.weight_decay is not None else 0,
+                beta=optimizer_config.beta1 if optimizer_config.beta1 is not None else 0.9,
+                weight_decouple=optimizer_config.decoupled_decay if optimizer_config.decoupled_decay is not None else True,
+                fixed_decay=optimizer_config.fixed_decay if optimizer_config.fixed_decay is not None else False,
+            )
+
+        # AIDA Optimizer
+        case Optimizer.AIDA:
+            from pytorch_optimizer.optimizer.aida import Aida
+            optimizer = Aida(
+                params=parameters,
+                lr=config.learning_rate if config.learning_rate is not None else 0,
+                weight_decay=optimizer_config.weight_decay if optimizer_config.weight_decay is not None else 0.0,
+                betas=(optimizer_config.beta1 if optimizer_config.beta1 is not None else 0.9,
+                       optimizer_config.beta2 if optimizer_config.beta2 is not None else 0.999),
+                weight_decouple=optimizer_config.decoupled_decay if optimizer_config.decoupled_decay is not None else True,
+                fixed_decay=optimizer_config.fixed_decay if optimizer_config.fixed_decay is not None else False,
+                k=optimizer_config.k if optimizer_config.k is not None else 2,
+                xi=optimizer_config.xi if optimizer_config.xi is not None else 1e-20,
+                rectify=optimizer_config.rectify if optimizer_config.rectify is not None else False,
+                n_sma_threshold=optimizer_config.n_sma_threshold if optimizer_config.n_sma_threshold is not None else 5,
+                degenerated_to_sgd=optimizer_config.degenerated_to_sgd if optimizer_config.degenerated_to_sgd is not None else True,
+                ams_bound=optimizer_config.ams_bound if optimizer_config.ams_bound is not None else False,
+                r=optimizer_config.r if optimizer_config.r is not None else 0.95,
+                adanorm=optimizer_config.adanorm if optimizer_config.adanorm is not None else False,
+                adam_debias=optimizer_config.adam_debias if optimizer_config.adam_debias is not None else False,
+                eps=optimizer_config.eps if optimizer_config.eps is not None else 1e-8,
+            )
+
+    if state_dict is not None and optimizer is not None:
         if 'param_group_mapping' not in state_dict:
             # Old method of loading the optimizer state. This only works if the param groups did not change.
             for i, params in enumerate(parameters):

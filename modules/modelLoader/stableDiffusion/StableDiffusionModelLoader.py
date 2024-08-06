@@ -1,3 +1,4 @@
+import os
 import traceback
 
 import torch
@@ -52,7 +53,10 @@ class StableDiffusionModelLoader(
             base_model_name: str,
             vae_model_name: str,
     ):
-        self.__load_diffusers(model, model_type, weight_dtypes, base_model_name, vae_model_name)
+        if os.path.isfile(os.path.join(base_model_name, "meta.json")):
+            self.__load_diffusers(model, model_type, weight_dtypes, base_model_name, vae_model_name)
+        else:
+            raise Exception("not an internal model")
 
     def __load_diffusers(
             self,
@@ -242,8 +246,8 @@ class StableDiffusionModelLoader(
     ):
         stacktraces = []
 
-        model.sd_config = self._load_sd_config(model_type)
-        model.sd_config_filename = self._get_sd_config_name(model_type)
+        model.sd_config = self._load_sd_config(model_type, model_names.base_model)
+        model.sd_config_filename = self._get_sd_config_name(model_type, model_names.base_model)
 
         try:
             self.__load_internal(model, model_type, weight_dtypes, model_names.base_model, model_names.vae_model)

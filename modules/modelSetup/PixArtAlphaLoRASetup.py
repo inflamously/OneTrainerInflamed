@@ -7,6 +7,14 @@ from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameter
 from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.optimizer_util import init_model_parameters
+from modules.util.torch_util import state_dict_has_prefix
+
+
+PRESETS = {
+    "attn-mlp": ["attn1" "attn2", "ff.net"],
+    "attn-only": ["attn1", "attn2"],
+    "full": [],
+}
 
 
 class PixArtAlphaLoRASetup(
@@ -94,26 +102,29 @@ class PixArtAlphaLoRASetup(
         if config.train_any_embedding():
             model.text_encoder.get_input_embeddings().to(dtype=config.embedding_weight_dtype.torch_dtype())
 
+        create_te = config.text_encoder.train or state_dict_has_prefix(model.lora_state_dict, "lora_te")
         model.text_encoder_lora = LoRAModuleWrapper(
-            model.text_encoder, config.lora_rank, "lora_te", config.lora_alpha
-        )
+            model.text_encoder, "lora_te", config
+        ) if create_te else None
 
         model.transformer_lora = LoRAModuleWrapper(
-            model.transformer, config.lora_rank, "lora_transformer", config.lora_alpha, ["attn1", "attn2"]
+            model.transformer, "lora_transformer", config, config.lora_layers.split(",")
         )
 
         if model.lora_state_dict:
-            model.text_encoder_lora.load_state_dict(model.lora_state_dict)
+            if create_te:
+                model.text_encoder_lora.load_state_dict(model.lora_state_dict)
             model.transformer_lora.load_state_dict(model.lora_state_dict)
             model.lora_state_dict = None
 
-        model.text_encoder_lora.set_dropout(config.dropout_probability)
+        if config.text_encoder.train:
+            model.text_encoder_lora.set_dropout(config.dropout_probability)
+        if create_te:
+            model.text_encoder_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
+            model.text_encoder_lora.hook_to_module()
+
         model.transformer_lora.set_dropout(config.dropout_probability)
-
-        model.text_encoder_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
         model.transformer_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
-
-        model.text_encoder_lora.hook_to_module()
         model.transformer_lora.hook_to_module()
 
         self._remove_added_embeddings_from_tokenizer(model.tokenizer)

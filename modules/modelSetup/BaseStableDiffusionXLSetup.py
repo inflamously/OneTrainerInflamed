@@ -11,8 +11,9 @@ from modules.model.StableDiffusionXLModel import StableDiffusionXLModel, StableD
 from modules.modelSetup.BaseModelSetup import BaseModelSetup
 from modules.modelSetup.mixin.ModelSetupDebugMixin import ModelSetupDebugMixin
 from modules.modelSetup.mixin.ModelSetupDiffusionLossMixin import ModelSetupDiffusionLossMixin
-from modules.modelSetup.mixin.ModelSetupDiffusionNoiseMixin import ModelSetupDiffusionNoiseMixin
+from modules.modelSetup.mixin.ModelSetupDiffusionMixin import ModelSetupDiffusionMixin
 from modules.modelSetup.mixin.ModelSetupEmbeddingMixin import ModelSetupEmbeddingMixin
+from modules.modelSetup.mixin.ModelSetupNoiseMixin import ModelSetupNoiseMixin
 from modules.modelSetup.stableDiffusion.checkpointing_util import \
     enable_checkpointing_for_transformer_blocks, enable_checkpointing_for_clip_encoder_layers, \
     create_checkpointed_forward
@@ -29,7 +30,8 @@ class BaseStableDiffusionXLSetup(
     BaseModelSetup,
     ModelSetupDiffusionLossMixin,
     ModelSetupDebugMixin,
-    ModelSetupDiffusionNoiseMixin,
+    ModelSetupNoiseMixin,
+    ModelSetupDiffusionMixin,
     ModelSetupEmbeddingMixin,
     metaclass=ABCMeta
 ):
@@ -280,11 +282,11 @@ class BaseStableDiffusionXLSetup(
                 tokens_1=batch['tokens_1'],
                 tokens_2=batch['tokens_2'],
                 text_encoder_1_output=batch[
-                    'text_encoder_1_hidden_state'] if not config.text_encoder.train and not config.train_any_embedding() else None,
+                    'text_encoder_1_hidden_state'] if not config.train_text_encoder_or_embedding() else None,
                 text_encoder_2_output=batch[
-                    'text_encoder_2_hidden_state'] if not config.text_encoder_2.train and not config.train_any_embedding() else None,
+                    'text_encoder_2_hidden_state'] if not config.train_text_encoder_2_or_embedding() else None,
                 pooled_text_encoder_2_output=batch[
-                    'text_encoder_2_pooled_state'] if not config.text_encoder_2.train and not config.train_any_embedding() else None,
+                    'text_encoder_2_pooled_state'] if not config.train_text_encoder_2_or_embedding() else None,
             )
 
             latent_image = batch['latent_image']
@@ -416,12 +418,11 @@ class BaseStableDiffusionXLSetup(
                 }
             else:
                 timestep = self._get_timestep_discrete(
-                    model.noise_scheduler,
+                    model.noise_scheduler.config['num_train_timesteps'],
                     deterministic,
                     generator,
                     scaled_latent_image.shape[0],
                     config,
-                    train_progress.global_step,
                 )
 
                 scaled_noisy_latent_image = self._add_noise_discrete(

@@ -4,18 +4,19 @@ opencv-python==4.9.0.80
 pillow==10.3.0
 tqdm==4.66.4
 PyYAML==6.0.1
-huggingface-hub==0.23.1
+huggingface-hub==0.23.3
 scipy==1.13.1; sys_platform != 'win32'
+matplotlib==3.9.0
 
 # pytorch
 accelerate==0.30.1
 safetensors==0.4.3
-tensorboard==2.16.2
+tensorboard==2.17.0
 pytorch-lightning==2.2.5
 
 # stable diffusion
--e git+https://github.com/huggingface/diffusers.git@0ab63ff#egg=diffusers
-transformers==4.41.1
+-e git+https://github.com/huggingface/diffusers.git@dd4b731#egg=diffusers
+transformers==4.42.3
 omegaconf==2.3.0 # needed to load stable diffusion from single ckpt files
 invisible-watermark==0.2.0 # needed for the SDXL pipeline
 
@@ -24,13 +25,14 @@ pooch==1.8.1
 open-clip-torch==2.24.0
 
 # data loader
--e git+https://github.com/Nerogar/mgds.git@c8fe232#egg=mgds
+-e git+https://github.com/Nerogar/mgds.git@d38efdf#egg=mgds
 
 # optimizers
 dadaptation==3.2 # dadaptation optimizers
 lion-pytorch==0.1.4 # lion optimizer
 prodigyopt==1.0 # prodigy optimizer
 schedulefree==1.2.5 # schedule-free optimizers
+pytorch_optimizer==3.0.2 # pytorch optimizers
 
 # Profiling
 scalene==1.5.41
