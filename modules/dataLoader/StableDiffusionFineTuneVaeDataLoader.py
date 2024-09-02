@@ -1,8 +1,16 @@
 import os
 import re
 
+from modules.dataLoader.BaseDataLoader import BaseDataLoader
+from modules.model.StableDiffusionModel import StableDiffusionModel
+from modules.util import path_util
+from modules.util.config.TrainConfig import TrainConfig
+from modules.util.torch_util import torch_gc
+from modules.util.TrainProgress import TrainProgress
+
 import torch
-from mgds.MGDS import TrainDataLoader, MGDS
+
+from mgds.MGDS import MGDS, TrainDataLoader
 from mgds.OutputPipelineModule import OutputPipelineModule
 from mgds.pipelineModules.AspectBatchSorting import AspectBatchSorting
 from mgds.pipelineModules.AspectBucketing import AspectBucketing
@@ -27,13 +35,6 @@ from mgds.pipelineModules.ScaleCropImage import ScaleCropImage
 from mgds.pipelineModules.ScaleImage import ScaleImage
 from mgds.pipelineModules.SingleAspectCalculation import SingleAspectCalculation
 from mgds.pipelineModules.VariationSorting import VariationSorting
-
-from modules.dataLoader.BaseDataLoader import BaseDataLoader
-from modules.model.StableDiffusionModel import StableDiffusionModel
-from modules.util import path_util
-from modules.util.TrainProgress import TrainProgress
-from modules.util.config.TrainConfig import TrainConfig
-from modules.util.torch_util import torch_gc
 
 
 class StableDiffusionFineTuneVaeDataLoader(BaseDataLoader):
@@ -111,7 +112,7 @@ class StableDiffusionFineTuneVaeDataLoader(BaseDataLoader):
     def __mask_augmentation_modules(self, config: TrainConfig) -> list:
         inputs = ['image']
 
-        lowest_resolution = min([int(x.strip()) for x in re.split('\D', config.resolution) if x.strip() != ''])
+        lowest_resolution = min([int(x.strip()) for x in re.split(r'\D', config.resolution) if x.strip() != ''])
 
         random_mask_rotate_crop = RandomMaskRotateCrop(mask_name='latent_mask', additional_names=inputs, min_size=lowest_resolution,
                                                        min_padding_percent=10, max_padding_percent=30, max_rotate_angle=20,
@@ -124,9 +125,9 @@ class StableDiffusionFineTuneVaeDataLoader(BaseDataLoader):
 
         return modules
 
-
     def __aspect_bucketing_in(self, config: TrainConfig):
         calc_aspect = CalcAspect(image_in_name='image', resolution_out_name='original_resolution')
+
         aspect_bucketing = AspectBucketing(
             quantization=8,
             resolution_in_name='original_resolution',
@@ -148,16 +149,14 @@ class StableDiffusionFineTuneVaeDataLoader(BaseDataLoader):
             possible_resolutions_out_name='possible_resolutions'
         )
 
-        modules = []
+        modules = [calc_aspect]
 
-        modules.append(calc_aspect)
         if config.aspect_ratio_bucketing:
             modules.append(aspect_bucketing)
         else:
             modules.append(single_aspect_calculation)
 
         return modules
-
 
     def __crop_modules(self, config: TrainConfig):
         inputs = ['image']

@@ -1,14 +1,13 @@
-import torch
-
 from modules.model.WuerstchenModel import WuerstchenModel
 from modules.modelSetup.BaseWuerstchenSetup import BaseWuerstchenSetup
 from modules.module.LoRAModule import LoRAModuleWrapper
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection, NamedParameterGroup
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameterGroupCollection
 from modules.util.optimizer_util import init_model_parameters
 from modules.util.torch_util import state_dict_has_prefix
+from modules.util.TrainProgress import TrainProgress
 
+import torch
 
 # This is correct for the latest cascade, but other Wuerstchen models may have
 # different names. I honestly don't know what makes a good preset here so I'm
@@ -47,26 +46,19 @@ class WuerstchenLoRASetup(
         if config.text_encoder.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="prior_text_encoder_lora",
-                display_name="prior_text_encoder_lora",
                 parameters=model.prior_text_encoder_lora.parameters(),
                 learning_rate=config.text_encoder.learning_rate,
             ))
 
         if config.train_any_embedding():
-            for parameter, placeholder, name in zip(model.prior_embedding_wrapper.additional_embeddings,
-                                                    model.prior_embedding_wrapper.additional_embedding_placeholders,
-                                                    model.prior_embedding_wrapper.additional_embedding_names):
-                parameter_group_collection.add_group(NamedParameterGroup(
-                    unique_name=f"prior_embeddings/{name}",
-                    display_name=f"prior_embeddings/{placeholder}",
-                    parameters=[parameter],
-                    learning_rate=config.embedding_learning_rate,
-                ))
+            self._add_embedding_param_groups(
+                model.prior_embedding_wrapper, parameter_group_collection, config.embedding_learning_rate,
+                "prior_embeddings"
+            )
 
         if config.prior.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="prior_prior_lora",
-                display_name="prior_prior_lora",
                 parameters=model.prior_prior_lora.parameters(),
                 learning_rate=config.prior.learning_rate,
             ))

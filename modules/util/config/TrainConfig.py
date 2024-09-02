@@ -3,8 +3,6 @@ import uuid
 from copy import deepcopy
 from typing import Any
 
-from modules.util.ModelNames import ModelNames, EmbeddingName
-from modules.util.ModelWeightDtypes import ModelWeightDtypes
 from modules.util.config.BaseConfig import BaseConfig
 from modules.util.config.ConceptConfig import ConceptConfig
 from modules.util.config.SampleConfig import SampleConfig
@@ -21,9 +19,11 @@ from modules.util.enum.LossWeight import LossWeight
 from modules.util.enum.ModelFormat import ModelFormat
 from modules.util.enum.ModelType import ModelType, PeftType
 from modules.util.enum.Optimizer import Optimizer
-from modules.util.enum.TimeUnit import TimeUnit
 from modules.util.enum.TimestepDistribution import TimestepDistribution
+from modules.util.enum.TimeUnit import TimeUnit
 from modules.util.enum.TrainingMethod import TrainingMethod
+from modules.util.ModelNames import EmbeddingName, ModelNames
+from modules.util.ModelWeightDtypes import ModelWeightDtypes
 from modules.util.torch_util import default_device
 
 
@@ -574,15 +574,18 @@ class TrainConfig(BaseConfig):
 
     def train_text_encoder_or_embedding(self) -> bool:
         return (self.text_encoder.train and self.training_method != TrainingMethod.EMBEDDING) \
-            or (self.text_encoder.train_embedding and self.train_any_embedding())
+            or ((self.text_encoder.train_embedding or not self.model_type.has_multiple_text_encoders())
+                and self.train_any_embedding())
 
     def train_text_encoder_2_or_embedding(self) -> bool:
         return (self.text_encoder_2.train and self.training_method != TrainingMethod.EMBEDDING) \
-            or (self.text_encoder_2.train_embedding and self.train_any_embedding())
+            or ((self.text_encoder_2.train_embedding or not self.model_type.has_multiple_text_encoders())
+                and self.train_any_embedding())
 
     def train_text_encoder_3_or_embedding(self) -> bool:
         return (self.text_encoder_3.train and self.training_method != TrainingMethod.EMBEDDING) \
-            or (self.text_encoder_3.train_embedding and self.train_any_embedding())
+            or ((self.text_encoder_3.train_embedding or not self.model_type.has_multiple_text_encoders())
+                and self.train_any_embedding())
 
     def to_settings_dict(self) -> dict:
         config = TrainConfig.default_values().from_dict(self.to_dict())
@@ -595,17 +598,19 @@ class TrainConfig(BaseConfig):
     def to_pack_dict(self) -> dict:
         config = TrainConfig.default_values().from_dict(self.to_dict())
 
-        with open(config.concept_file_name, 'r') as f:
-            concepts = json.load(f)
-            for i in range(len(concepts)):
-                concepts[i] = ConceptConfig.default_values().from_dict(concepts[i])
-            config.concepts = concepts
+        if config.concepts is None:
+            with open(config.concept_file_name, 'r') as f:
+                concepts = json.load(f)
+                for i in range(len(concepts)):
+                    concepts[i] = ConceptConfig.default_values().from_dict(concepts[i])
+                config.concepts = concepts
 
-        with open(config.sample_definition_file_name, 'r') as f:
-            samples = json.load(f)
-            for i in range(len(samples)):
-                samples[i] = SampleConfig.default_values().from_dict(samples[i])
-            config.samples = samples
+        if config.samples is None:
+            with open(config.sample_definition_file_name, 'r') as f:
+                samples = json.load(f)
+                for i in range(len(samples)):
+                    samples[i] = SampleConfig.default_values().from_dict(samples[i])
+                config.samples = samples
 
         return config.to_dict()
 
