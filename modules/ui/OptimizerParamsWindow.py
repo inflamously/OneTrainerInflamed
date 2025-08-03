@@ -118,6 +118,9 @@ class OptimizerParamsWindow(ctk.CTkToplevel):
             'is_paged': {'title': 'Is Paged', 'tooltip': 'Whether the optimizer\'s internal state should be paged to CPU.', 'type': 'bool'},
             'log_every': {'title': 'Log Every', 'tooltip': 'Intervals at which logging should occur.', 'type': 'int'},
             'lr_decay': {'title': 'LR Decay', 'tooltip': 'Rate at which learning rate decreases.', 'type': 'float'},
+            'lr_bump': {'title': 'LR Bump', 'tooltip': 'Rate at which learning rate increases or decreases.', 'type': 'float'},
+            'min_lr': {'title': 'Min LR', 'tooltip': 'Minimum learning rate threshold', 'type': 'float'},
+            'max_lr': {'title': 'Max LR', 'tooltip': 'Maximum learning rate threshold', 'type': 'float'},
             'max_unorm': {'title': 'Max Unorm', 'tooltip': 'Maximum value for gradient clipping by norms.', 'type': 'float'},
             'maximize': {'title': 'Maximize', 'tooltip': 'Whether to optimizer_maximize the optimization function.', 'type': 'bool'},
             'min_8bit_size': {'title': 'Min 8bit Size', 'tooltip': 'Minimum tensor size for 8-bit quantization.', 'type': 'int'},
@@ -162,6 +165,8 @@ class OptimizerParamsWindow(ctk.CTkToplevel):
             'use_grams': {'title': 'use_grams', 'tooltip': 'Use grams method', 'type': 'bool'},
             'use_adopt': {'title': 'use_adopt', 'tooltip': 'Use adopt method', 'type': 'bool'},
             'use_focus': {'title': 'use_focus', 'tooltip': 'Use focus method', 'type': 'bool'},
+            'use_paramiter_swapping': {'title': 'Paramiter Swapping', 'tooltip': 'Use of paramiter swapping algorithm', 'type': 'bool'},
+            'paramiter_swapping_factor': {'title': 'Paramiter Swapping Factor', 'tooltip': 'Factor when to swap paramiters', 'type': 'float'},
         }
         # @formatter:on
 
