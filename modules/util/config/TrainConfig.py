@@ -63,6 +63,9 @@ class TrainOptimizerConfig(BaseConfig):
     is_paged: bool
     log_every: int
     lr_decay: float
+    lr_bump: float
+    min_lr: float
+    max_lr: float
     max_unorm: float
     maximize: bool
     min_8bit_size: int
@@ -106,6 +109,9 @@ class TrainOptimizerConfig(BaseConfig):
     use_cautious: False
     use_grams: False
     use_adopt: False
+    use_focus: False
+    use_paramiter_swapping: False
+    paramiter_swapping_factor: float
     d_limiter: True
     use_schedulefree: True
     use_orthograd: False
@@ -182,6 +188,9 @@ class TrainOptimizerConfig(BaseConfig):
         data.append(("is_paged", False, bool, False))
         data.append(("log_every", None, int, True))
         data.append(("lr_decay", None, float, True))
+        data.append(("lr_bump", None, float, True))
+        data.append(("min_lr", None, float, True))
+        data.append(("max_lr", None, float, True))
         data.append(("max_unorm", None, float, True))
         data.append(("maximize", False, bool, False))
         data.append(("min_8bit_size", None, int, True))
@@ -224,6 +233,9 @@ class TrainOptimizerConfig(BaseConfig):
         data.append(("use_cautious", False, bool, False))
         data.append(("use_grams", False, bool, False))
         data.append(("use_adopt", False, bool, False))
+        data.append(("use_focus", False, bool, False))
+        data.append(("use_paramiter_swapping", False, bool, False))
+        data.append(("paramiter_swapping_factor", None, float, False))
         data.append(("d_limiter", True, bool, True))
         data.append(("use_schedulefree", True, bool, True))
         data.append(("use_orthograd", False, bool, False))

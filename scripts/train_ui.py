@@ -6,6 +6,9 @@ from modules.ui.TrainUI import TrainUI
 
 
 def main():
+    from PIL import ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+
     ui = TrainUI()
     ui.mainloop()
 

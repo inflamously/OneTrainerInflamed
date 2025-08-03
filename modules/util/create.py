@@ -50,6 +50,8 @@ from diffusers import (
     UniPCMultistepScheduler,
 )
 
+from modules.util.optimizer.automagic import Automagic
+
 factory.import_dir("modules/modelSampler", "modules.modelSampler")
 factory.import_dir("modules/modelLoader", "modules.modelLoader")
 factory.import_dir("modules/modelSaver", "modules.modelSaver")
@@ -166,6 +168,27 @@ def create_optimizer(
                 dampening=optimizer_config.dampening if optimizer_config.dampening is not None else 0,
                 weight_decay=optimizer_config.weight_decay if optimizer_config.weight_decay is not None else 0,
                 nesterov=optimizer_config.nesterov if optimizer_config.nesterov is not None else False,
+            )
+
+        case Optimizer.AUTOMAGIC:
+            eps, eps2 = optimizer_config.eps, optimizer_config.eps2
+            if eps is None or eps2 is None:
+                eps_conf = (1e-30, 1e-3)
+            else:
+                eps_conf = (eps, eps2)
+
+            optimizer = Automagic(
+                parameters,
+                lr=config.learning_rate,
+                lr_bump=optimizer_config.lr_bump if optimizer_config.lr_bump is not None else 1e-6,
+                min_lr=optimizer_config.min_lr if optimizer_config.min_lr is not None else 1e-7,
+                max_lr=optimizer_config.max_lr if optimizer_config.max_lr is not None else 1e-3,
+                eps=eps_conf,
+                beta2=optimizer_config.beta2 if optimizer_config.beta2 is not None else 0.999,
+                clip_threshold=optimizer_config.clip_threshold if optimizer_config.clip_threshold is not None else 0,
+                weight_decay=optimizer_config.weight_decay if optimizer_config.weight_decay is not None else 1e-4,
+                do_paramiter_swapping=optimizer_config.use_paramiter_swapping if optimizer_config.use_paramiter_swapping is not None else False,
+                paramiter_swapping_factor=optimizer_config.paramiter_swapping_factor if optimizer_config.paramiter_swapping_factor is not None else 0.1,
             )
 
         # ADAM Optimizer

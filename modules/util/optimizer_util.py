@@ -192,6 +192,18 @@ OPTIMIZER_DEFAULT_PARAMETERS = {
         "cautious": False,
         "eps": 1e-6,
     },
+    Optimizer.AUTOMAGIC: {
+        "lr_bump": 1e-6,
+        "eps": 1e-30,
+        "eps2": 1e-3,
+        "beta2": 0.999,
+        "min_lr": 1e-7,
+        "max_lr": 1e-3,
+        "clip_threshold": 1.0,
+        "weight_decay": 1e-4,
+        "use_paramiter_swapping": False,
+        "paramiter_swapping_factor": 0.1
+    },
     Optimizer.LAMB: {
         "bias_correction": True,
         "beta1": 0.9,
