@@ -156,7 +156,7 @@ OPTIMIZER_DEFAULT_PARAMETERS = {
         "eps": 1e-6,
     },
     Optimizer.AUTOMAGIC: {
-        "lr_bump": 1e-7,
+        "lr_bump": 1e-6,
         "eps": 1e-30,
         "eps2": 1e-3,
         "beta2": 0.999,

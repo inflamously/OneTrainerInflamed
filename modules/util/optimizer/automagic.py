@@ -16,7 +16,7 @@ class Automagic(torch.optim.Optimizer):
     def __init__(
             self,
             params,
-            lr=1e-7,  # lr is start lr
+            lr=1e-6,  # lr is start lr
             min_lr=1e-7,
             max_lr=1e-3,
             lr_bump=1e-6,  # amount to bump the lr when adjusting
