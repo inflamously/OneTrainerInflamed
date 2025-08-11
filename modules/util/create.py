@@ -489,7 +489,7 @@ def create_optimizer(
             optimizer = Automagic(
                 parameters,
                 lr=config.learning_rate,
-                lr_bump=optimizer_config.lr_bump if optimizer_config.lr_bump is not None else 1e-7,
+                lr_bump=optimizer_config.lr_bump if optimizer_config.lr_bump is not None else 1e-6,
                 min_lr=optimizer_config.min_lr if optimizer_config.min_lr is not None else 1e-7,
                 max_lr=optimizer_config.max_lr if optimizer_config.max_lr is not None else 1e-3,
                 eps=eps_conf,
